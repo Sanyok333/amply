@@ -2,26 +2,26 @@ import numpy as np
 import matplotlib.pyplot as plt
 import csv
 
-print("--- 1. Зчитування даних з CSV-файлу (Варіант 1) ---")
+print("--- 1. Зчитування даних з CSV-файлу (Варіант 2) ---")
 with open('Масив.csv', 'w', newline='') as file:
     writer = csv.writer(file)
-    writer.writerow(['n', 't'])
-    writer.writerow([1000, 3])
-    writer.writerow([2000, 5])
-    writer.writerow([4000, 11])
-    writer.writerow([8000, 28])
-    writer.writerow([16000, 85])
+    writer.writerow(['RPS', 'CPU'])
+    writer.writerow([50, 20])
+    writer.writerow([100, 35])
+    writer.writerow([200, 60])
+    writer.writerow([400, 110])
+    writer.writerow([800, 210])
 
 x_data = []
 y_data = []
 with open("Масив.csv", "r", newline="") as file:
     reader = csv.DictReader(file)
     for row in reader:
-        x_data.append(float(row['n']))
-        y_data.append(float(row['t']))
+        x_data.append(float(row['RPS']))
+        y_data.append(float(row['CPU']))
 
-print("x:", x_data)
-print("y:", y_data)
+print("x (RPS):", x_data)
+print("y (CPU %):", y_data)
 
 print("--- 2. Побудова таблиці розділених різниць ---")
 
@@ -41,7 +41,7 @@ for i in range(len(x_data)):
     row_str = "\t".join([f"{diff_table[i][j]:.8f}" for j in range(len(x_data) - i)])
     print(f"Рядок {i}: {row_str}")
 
-print("--- 3. Обчислення прогнозу методами Ньютона і факторіальними многочленами ---")
+print("--- 3. Обчислення прогнозу для 600 RPS методами Ньютона і факторіальними многочленами ---")
 
 
 def newton_interp(x_nodes, y_nodes, x_val):
@@ -72,31 +72,31 @@ def factorial_interp(y_nodes, t_val):
     return result
 
 
-x_target = 6000
+x_target = 600
 res_newton = newton_interp(x_data, y_data, x_target)
-print(f"Прогноз (Ньютон) для n={x_target}: {res_newton:.4f} мс")
+print(f"Прогноз (Ньютон) для {x_target} RPS: {res_newton:.4f} % CPU")
 
 h_avg = (x_data[-1] - x_data[0]) / (len(x_data) - 1)
 t_target = (x_target - x_data[0]) / h_avg
 res_fact = factorial_interp(y_data, t_target)
-print(f"Прогноз (Факторіальні) для n={x_target}: {res_fact:.4f} мс")
+print(f"Прогноз (Факторіальні) для {x_target} RPS: {res_fact:.4f} % CPU")
 
-print("--- 4. Побудова графіка ---")
+print("--- 4. Побудова графіка CPU(RPS) ---")
 x_plot = np.linspace(min(x_data), max(x_data), 500)
 y_plot = [newton_interp(x_data, y_data, xi) for xi in x_plot]
 
 plt.figure(figsize=(10, 6))
-plt.plot(x_data, y_data, 'ro', label='Експериментальні дані')
+plt.plot(x_data, y_data, 'ro', label='Історичні дані')
 plt.plot(x_plot, y_plot, 'b-', label='Поліном Ньютона')
-plt.plot(x_target, res_newton, 'g*', markersize=10, label=f'Прогноз ({x_target})')
-plt.title("Інтерполяція Ньютона")
-plt.xlabel("Розмір вхідних даних (n)")
-plt.ylabel("Час (t), мс")
+plt.plot(x_target, res_newton, 'g*', markersize=10, label=f'Прогноз ({x_target} RPS)')
+plt.title("Модель CPU = f(RPS)")
+plt.xlabel("RPS (запитів за секунду)")
+plt.ylabel("Використання CPU (%)")
 plt.legend()
 plt.grid(True)
 plt.show()
 
-print("--- 5-6. Дослідницька частина: 5, 10, 20 вузлів та аналіз ефекту Рунге ---")
+print("--- 5-6. Дослідження: 5, 10, 20 вузлів та стабільність моделі (Ефект Рунге) ---")
 
 
 def runge_function(x):
@@ -120,11 +120,14 @@ for n_nodes in [5, 10, 20]:
     plt.figure(figsize=(8, 4))
     plt.plot(x_dense, y_dense, 'k--', label='Справжня функція f(x)')
     plt.plot(x_dense, y_interp, 'r-', label=f'Поліном Ньютона ({n_nodes} вузлів)')
-    plt.plot(x_nodes, y_nodes, 'bo', label='Вузли')
+    plt.plot(x_nodes, y_nodes, 'bo', label='Вузли інтерполяції')
     plt.title(f"Ефект Рунге при {n_nodes} вузлах")
     plt.legend()
     plt.grid(True)
     plt.show()
 
-print("Зі збільшенням кількості вузлів на краях відрізка похибка різко зростає.")
-print("Це явище називається ефектом Рунге і доводить, що багато вузлів не завжди означає кращу точність.")
+print("\nВИСНОВОК ЩОДО СТАБІЛЬНОСТІ МОДЕЛІ:")
+print("Модель показує хороші результати всередині відрізка з наявними даними.")
+print("Однак, зі збільшенням кількості вузлів поліноміальна інтерполяція стає нестабільною на краях відрізка.")
+print(
+    "Зокрема, спостерігається ефект Рунге — різкі коливання графіка, що робить поліноми високих степенів непридатними для точного прогнозування навантаження.")
